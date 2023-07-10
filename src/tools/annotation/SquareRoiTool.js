@@ -6,6 +6,34 @@ export default class SquareRoiTool extends RectangleRoiTool {
 
     this.name = 'SquareRoi';
   }
+  handleSelectedCallback(evt, toolData, handle, interactionType = 'mouse') {
+    const { element } = evt.detail;
+    const toolState = getToolState(element, this.name);
+    if (handle.hasBoundingBox) {
+      // Use default move handler.
+      moveHandleNearImagePoint(evt, this, toolData, handle, interactionType);
+      return;
+    }
+    const config = this.configuration;
+    config.dragOrigin = {
+      x: handle.x,
+      y: handle.y,
+    };
+    // Iterating over handles of all toolData instances to find the indices of the selected handle
+    for (let toolIndex = 0; toolIndex < toolState.data.length; toolIndex++) {
+      const points = toolState.data[toolIndex].handles.points;
+      for (let p = 0; p < points.length; p++) {
+        if (points[p] === handle) {
+          config.currentHandle = p;
+          config.currentTool = toolIndex;
+        }
+      }
+    }
+    this._modifying = true;
+    this._activateModify(element);
+    // Interupt eventDispatchers
+    preventPropagation(evt);
+  }
 
   createNewMeasurement(eventData) {
     const measurementData = super.createNewMeasurement(eventData);
